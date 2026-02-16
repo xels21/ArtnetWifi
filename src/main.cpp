@@ -25,10 +25,6 @@ https://github.com/rstephan
   #define DMX_TX_PIN 17  // Default TX pin for Serial2 on ESP32
 #endif
 
-#ifndef DMX_DE_PIN
-  #define DMX_DE_PIN 4  // Driver Enable pin for MAX485 (safe for all ESP32 variants)
-#endif
-
 #ifndef DMX_REFRESH_MS
   #define DMX_REFRESH_MS 10  // Maximum time between DMX frames in milliseconds
 #endif
@@ -85,9 +81,6 @@ bool ConnectWifi(void)
 #if DMX_ENABLE
 void sendDMX512()
 {
-  // Enable MAX485 transmit mode
-  digitalWrite(DMX_DE_PIN, HIGH);
-  
   // Send BREAK (88-176 microseconds low)
   Serial2.end();
   pinMode(DMX_TX_PIN, OUTPUT);
@@ -105,9 +98,6 @@ void sendDMX512()
   
   // Update timestamp
   lastDmxSend = millis();
-  
-  // Optional: Disable MAX485 transmit after sending (if using half-duplex)
-  // digitalWrite(DMX_DE_PIN, LOW);
 }
 #endif
 
@@ -167,16 +157,12 @@ void setup()
   
 #if DMX_ENABLE
   // Initialize DMX output
-  pinMode(DMX_DE_PIN, OUTPUT);
-  digitalWrite(DMX_DE_PIN, HIGH);  // Enable MAX485 transmit
   Serial2.begin(250000, DMX_SERIAL_CONFIG, -1, DMX_TX_PIN);
   memset(dmxData, 0, sizeof(dmxData));
   
-  Serial.println("DMX512 Output Enabled");
+  Serial.println("DMX512 Output Enabled (TX-only)");
   Serial.print("TX Pin: ");
   Serial.println(DMX_TX_PIN);
-  Serial.print("DE Pin: ");
-  Serial.println(DMX_DE_PIN);
 #else
   Serial.println("Debug Mode - DMX output disabled");
 #endif

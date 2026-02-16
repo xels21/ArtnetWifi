@@ -16,18 +16,19 @@ ESP32                    MAX485 Module              DMX XLR Connector
 │  GPIO 17 ───┼────────►│ DI (TXD)     │           │             │
 │   (TX)      │         │              │           │             │
 │             │         │              │           │             │
-│  GPIO 4  ───┼────────►│ DE/RE        │           │             │
-│   (DE)      │         │              │           │             │
+│  +5V ───────┼────────►│ DE           │           │             │
+│             │         │ (always HIGH)│           │             │
 │             │         │              │           │             │
-│  GND     ───┼────────►│ GND          │           │             │
+│  GND ───────┼────────►│ GND + RE     │           │             │
+│             │         │ (disabled)   │           │             │
 │             │         │              │           │   Pin 1     │
-│  5V/3.3V ───┼────────►│ VCC          │           │   (GND) ────┼──┐
+│  5V ────────┼────────►│ VCC          │           │   (GND) ────┼──┐
 │             │         │              │           │             │  │
 │             │         │      B    ───┼──────────►│   Pin 2     │  │
-│             │         │      (Data-) │           │   (Data-)   │  │
+│             │         │   (Data-)    │           │  (Data-)    │  │
 │             │         │              │           │             │  │
 │             │         │      A    ───┼──────────►│   Pin 3     │  │
-│             │         │      (Data+) │           │   (Data+)   │  │
+│             │         │   (Data+)    │           │  (Data+)    │  │
 └─────────────┘         │              │           │             │  │
                         └──────────────┘           └─────────────┘  │
                                                                      │
@@ -43,8 +44,8 @@ ESP32                    MAX485 Module              DMX XLR Connector
 | ESP32 Pin | MAX485 Pin | Function                          |
 |-----------|------------|-----------------------------------|
 | GPIO 17   | DI (TXD)   | Data Input (UART TX)              |
-| GPIO 4    | DE         | Driver Enable (HIGH = transmit)   |
-| GPIO 4    | RE         | Receiver Enable (tie to DE)       |
+| +3.3V/5V  | DE         | Driver Enable (tied HIGH)         |
+| GND       | RE+GND     | Receiver Enable + Ground          |
 | GND       | GND        | Ground                            |
 | 5V        | VCC        | Power (3.3V also works for most)  |
 
@@ -57,11 +58,11 @@ ESP32                    MAX485 Module              DMX XLR Connector
 
 ## Important Notes
 
-### 1. DE and RE Pins
-- **DE** (Driver Enable) and **RE** (Receiver Enable) should be tied together
-- Connect both to GPIO 16 on the ESP32
-- HIGH = Transmit mode, LOW = Receive mode
-- For DMX output, we keep it HIGH to transmit
+### 1. DE and RE Pins (Transmit-Only)
+- **DE** (Driver Enable): Tie permanently to +5V (always transmit)
+- **RE** (Receiver Enable): Tie to GND (disabled)
+- This configures MAX485 for transmit-only operation
+- No GPIO pins needed, saves microcontroller pins
 
 ### 2. Power Supply
 - MAX485 can run on 3.3V or 5V
@@ -93,17 +94,17 @@ Current settings in `platformio.ini`:
 build_flags = 
     -DDMX_ENABLE=1
     -DDMX_TX_PIN=17
-    -DDMX_DE_PIN=4
     -DDMX_REFRESH_MS=10
 ```
 
 To change pins or refresh rate, modify these values:
 - `DMX_TX_PIN`: UART TX pin (default: 17)
-- `DMX_DE_PIN`: Driver Enable pin for MAX485 (default: 4)
 - `DMX_REFRESH_MS`: Maximum time between DMX frames in milliseconds (default: 10ms = ~100Hz refresh)
   - Lower values = faster refresh, more responsive
   - Typical range: 10-25ms (40-100Hz)
   - DMX standard allows up to 1 second, but most fixtures expect 20-44 frames/sec
+
+**No GPIO pins needed for DE control** - wired permanently HIGH on the MAX485 for transmit-only mode
 
 **Important:** DMX frames are now sent continuously at the configured refresh rate, even without incoming Art-Net data. This ensures DMX fixtures receive a stable signal and don't timeout or flicker.
 
@@ -119,7 +120,8 @@ To change pins or refresh rate, modify these values:
 
 **No DMX output:**
 - Check MAX485 module has power (LED should be on if included)
-- Verify DE pin is HIGH (measure with multimeter: should be 3.3V)
+- Check DE pin is wired to +5V (should be HIGH constantly)
+- Check RE pin is wired to GND
 - Ensure Art-Net data is being sent to correct IP and universe
 
 **Flickering/unstable output:**
