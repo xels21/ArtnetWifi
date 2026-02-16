@@ -21,3 +21,5 @@
 *.app
 
 *~
+.pio
+platformio.ini
